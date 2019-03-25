@@ -185,7 +185,7 @@ public class Lexer {
 		// Special token?
 		int specialTokenPosition = specialTokens.indexOf(currentChar);
 		if (specialTokenPosition != -1)
-			return (new Character(specialTokens.charAt(specialTokenPosition))).toString();
+			return Character.toString(specialTokens.charAt(specialTokenPosition));
 		// Append current character to the token being built
 		StringBuffer buffer = new StringBuffer();
 		// Append remaining characters to the token being built
