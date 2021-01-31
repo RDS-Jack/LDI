@@ -1,6 +1,6 @@
 Examples for 6CC509 Language Design and Implementation 
 
-To load these as an Eclipse project, select "File | Import... | Git | Projects from Git" and pick "Clone URI". The URI is https://github.com/DaveVoorhis/LDI.git
+To load these as an Eclipse project, select "File | Import... | Git | Projects from Git" and pick "Clone URI". The URI is https://github.com/lleonardostella/LDI.git
 
 If it isn't installed already, install the JavaCC Eclipse plugin from the Eclipse Marketplace under "Help | Eclipse Marketplace..." Search for "JavaCC".
 
