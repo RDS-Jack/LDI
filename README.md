@@ -5,3 +5,4 @@ To load these as an Eclipse project, select "File | Import... | Git | Projects f
 If it isn't installed already, install the JavaCC Eclipse plugin from the Eclipse Marketplace under "Help | Eclipse Marketplace..." Search for "JavaCC".
 
 If a project doesn't compile, right click the .jjt or .jjt file -- usually found in the \*.parser package -- and select "Compile with javacc | jjtree | jtb". If it's greyed-out, double click on the file to load it into the editor, then right click on it again. 
+(author: Dave Voorhis, edited by Leonardo Stella)
