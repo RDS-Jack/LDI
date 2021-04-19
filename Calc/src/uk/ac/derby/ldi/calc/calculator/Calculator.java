@@ -112,4 +112,11 @@ public class Calculator {
 		System.exit(0);
 	}
 	
+	public void assign()
+	{
+		Value val = pop();
+		Value id = pop();
+		variables.put(id.stringValue(), new ValueInteger(val.intValue()));
+		push(variables.get(id.stringValue()));
+	}	
 }

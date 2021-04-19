@@ -141,7 +141,7 @@ TOKEN : /* IDENTIFIERS */
 |
   < #UPPER_LETTER:
   	[
-		"A-Z"
+		"A"-"Z"
   	]
   >
 }
@@ -295,7 +295,7 @@ void bool() :
                             | <FALSE> {calc.push_boolean(false);}
 }
 void identifier() :
-{}
+{Token t;}
 {
   				t = <IDENTIFIER> {calc.push_identifier(t.toString());} 
 }

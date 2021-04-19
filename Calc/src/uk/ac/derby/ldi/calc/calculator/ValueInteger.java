@@ -71,4 +71,8 @@ public class ValueInteger extends ValueAbstract {
 	public String toString() {
 		return "" + internalValue;
 	}
+
+	public String stringValue() {
+		return toString();
+	}
 }

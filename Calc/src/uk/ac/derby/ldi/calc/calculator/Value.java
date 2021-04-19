@@ -44,6 +44,8 @@ public interface Value {
 	
 	/** Convert this to a primitive double. */
 	public double doubleValue();
+	
+	public String stringValue();
 
 	/** Test this value and another for equality. */
 	public Value eq(Value v);

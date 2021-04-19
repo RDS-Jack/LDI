@@ -75,4 +75,8 @@ public class ValueBoolean extends ValueAbstract {
 	public String toString() {
 		return "" + internalValue;
 	}
+
+	public String stringValue() {
+		return toString();
+	}
 }
