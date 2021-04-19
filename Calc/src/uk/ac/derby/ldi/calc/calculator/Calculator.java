@@ -14,6 +14,7 @@ import java.util.*;
 public class Calculator {
 
 	private Stack<Value> stack = new Stack<Value>();
+	private Map<String, Value> variables = new HashMap<String,Value>();
 	
 	public void push(Value v) {
 		stack.push(v);
@@ -100,4 +101,15 @@ public class Calculator {
 	public void push_boolean(boolean b) {
 		push(new ValueBoolean(b));
 	}
+	
+	public void push_identifier(String i)
+	{
+		push(new ValueString(i));
+	}
+	
+	public void quit()
+	{
+		System.exit(0);
+	}
+	
 }

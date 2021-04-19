@@ -69,6 +69,7 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 | < NOT: "NOT" >
 | < TRUE: "TRUE" >
 | < FALSE: "FALSE" >
+| < QUIT: "quit">
 }
 
 TOKEN : /* LITERALS */
@@ -124,7 +125,7 @@ TOKEN : /* LITERALS */
 
 TOKEN : /* IDENTIFIERS */
 {
-  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+  < IDENTIFIER: <UPPER_LETTER> (<LETTER>|<DIGIT>)* >
 | < #LETTER:
       [
        "a"-"z",
@@ -136,6 +137,12 @@ TOKEN : /* IDENTIFIERS */
       [
        "0"-"9"
       ]
+  >
+|
+  < #UPPER_LETTER:
+  	[
+		"A-Z"
+  	]
   >
 }
 
@@ -156,11 +163,11 @@ TOKEN : /* SEPARATORS */
 
 TOKEN : /* OPERATOR SYMBOLS */
 {
-  < ASSIGN: ":=" >
+  < ASSIGN: "=" >
 | < PEQ: "+=" >
 | < MEQ: "-=" >
 | < UEQ: "@=" >
-| < EQ: "=" >
+| < EQ: "==" >
 | < GT: ">" >
 | < LT: "<" >
 | < LE: "<=" >
@@ -207,14 +214,18 @@ void or_expression() :
 void and_expression() : 
 {} 
 { 
-			      compare_expression() ( <AND> compare_expression() {calc.and();} )*
+			      assign_expression() ( <AND> assign_expression() {calc.and();} )*
 }
-
+void assign_expression() :
+{}
+{
+  					compare_expression() [ "=" compare_expression() {calc.assign();} ]
+}
 void compare_expression() : 
 {} 
 { 
                               add_expression() [
-                                 "="  add_expression() {calc.eq();}
+                                 "=="  add_expression() {calc.eq();}
                                | "<>" add_expression() {calc.neq();}
                                | ">=" add_expression() {calc.gte();}
                                | "<=" add_expression() {calc.lte();}
@@ -263,6 +274,8 @@ void literal() :
 							  integer()
 							| rational()
 							| bool()
+							| identifier()
+							| quit()
 }
 
 void integer() : {Token t;} 
@@ -280,4 +293,14 @@ void bool() :
 { 
 			      			  <TRUE>  {calc.push_boolean(true);}
                             | <FALSE> {calc.push_boolean(false);}
+}
+void identifier() :
+{}
+{
+  				t = <IDENTIFIER> {calc.push_identifier(t.toString());} 
+}
+void quit() :
+{}
+{
+	<QUIT> {calc.quit();}
 }
