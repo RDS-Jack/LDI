@@ -94,7 +94,7 @@ public class Calculator {
 	}
 	
 	public void push_floating(String s) {
-		throw new ExceptionSemantic("Floating point values are not implemented yet.");
+		push(new ValueDouble(Double.parseDouble(s)));
 	}
 	
 	public void push_boolean(boolean b) {
