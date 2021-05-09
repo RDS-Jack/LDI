@@ -63,6 +63,7 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 | <NOT: "NOT">
 | <TRUE: "TRUE">
 | <FALSE: "FALSE">
+| < QUIT: "QUIT">
 }
 
 TOKEN : /* LITERALS */
@@ -275,6 +276,7 @@ void literal() :
 							  integer()
 							| rational()
 							| bool()
+							| quit()
 }
 
 void integer() #Integer : 
@@ -294,4 +296,9 @@ void bool() :
 { 
 			      <TRUE> #True
                 | <FALSE> #False
+}
+void quit() :
+{}
+{
+  					<QUIT> #Quit
 }

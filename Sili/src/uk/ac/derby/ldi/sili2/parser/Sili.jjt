@@ -62,6 +62,7 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
   < IF: "IF" >
 | < ELSE: "ELSE" >
 | < FOR: "FOR" >
+| <WHILE: "WHILE" >
 | < WRITE: "WRITE" >
 | < FN: "FN" >
 | < RETURN: "RETURN" >
@@ -70,6 +71,7 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 | < NOT: "NOT" >
 | < TRUE: "TRUE" >
 | < FALSE: "FALSE" >
+| < QUIT: "QUIT">
 }
 
 TOKEN : /* LITERALS */
@@ -219,8 +221,10 @@ void statement() #Statement :
 				|	block()
 				|	ifstatement()	
 				|	forloop()
+				|   whileloop()
 				|	write()
 				|	call()
+				|   quit()
 }
 
 void block() #Block :
@@ -275,6 +279,11 @@ void forloop() #ForLoop :
   					<FOR> "(" assignment() ";" expression() ";" assignment() ")" statement()
 }
 
+void whileloop() #WhileLoop :
+{}
+{
+  					<WHILE> "(" expression() ")" statement()
+}
 void write() :
 {}
 {
@@ -414,4 +423,10 @@ void bool() :
 { 
 			      <TRUE> #True
                 | <FALSE> #False
+}
+
+void quit() :
+{}
+{
+  					<QUIT> #Quit
 }

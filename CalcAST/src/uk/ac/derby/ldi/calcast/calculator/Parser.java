@@ -132,5 +132,11 @@ public class Parser implements CalcVisitor {
 	public Object visit(ASTFalse node, Object data) {
 		return new ValueBoolean(false);
 	}
+	
+	public Object visit(ASTQuit node, Object data)
+	{
+		System.exit(0);
+		return data;
+	}
 
 }

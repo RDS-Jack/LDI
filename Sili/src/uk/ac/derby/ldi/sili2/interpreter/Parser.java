@@ -182,6 +182,20 @@ public class Parser implements SiliVisitor {
 		return data;
 	}
 	
+	public Object visit(ASTWhileLoop node, Object data) {
+		while (true) {
+			Value hopefullyValueBoolean = doChild(node, 0);
+			if (!(hopefullyValueBoolean instanceof ValueBoolean))
+				throw new ExceptionSemantic("The test expression of a while loop must be boolean.");
+			if (!((ValueBoolean)hopefullyValueBoolean).booleanValue())
+				break;
+			
+			// do loop statement
+			doChild(node, 1);
+		}
+		return data;
+	}
+	
 	// Process an identifier
 	// This doesn't do anything, but needs to be here because we need an ASTIdentifier node.
 	public Object visit(ASTIdentifier node, Object data) {
@@ -331,6 +345,12 @@ public class Parser implements SiliVisitor {
 		if (node.optimised == null)
 			node.optimised = new ValueBoolean(false);
 		return node.optimised;
+	}
+	
+	public Object visit(ASTQuit node, Object data)
+	{
+		System.exit(0);
+		return node;
 	}
 
 }
