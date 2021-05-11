@@ -71,7 +71,21 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 | < NOT: "NOT" >
 | < TRUE: "TRUE" >
 | < FALSE: "FALSE" >
+}
+
+TOKEN : /* RESERVED WORDS AND LITERALS WITH CASE */
+{
+   < PLUSENG:"PLUS"|"+">
+| < MINUSENG:"MINUS">
+| < MULENG:"MULTIPLY">
+| < DIVENG:"DIVIDE">
 | < QUIT: "QUIT">
+}
+
+TOKEN : /* RESERVED TYPES */
+{
+	<Integer:"Integer">
+| 	<String:"String" >
 }
 
 TOKEN : /* LITERALS */
@@ -225,6 +239,7 @@ void statement() #Statement :
 				|	write()
 				|	call()
 				|   quit()
+				|   typedAssignment()
 }
 
 void block() #Block :
@@ -263,7 +278,13 @@ void returnexpr() #ReturnExpression :
 void assignment() :
 {}
 {
-					identifier() "=" expression() #Assignment(2)
+					identifier() "=" expression() ";" #Assignment(2)
+}
+
+void typedAssignment() :
+{}
+{
+					types() identifier() "=" expression() ";" #TypedAssignment(3)
 }
 
 void ifstatement() #IfStatement :
@@ -287,7 +308,7 @@ void whileloop() #WhileLoop :
 void write() :
 {}
 {
-					<WRITE> expression() #Write(1)
+					<WRITE> expression() ";" #Write(1)
 }
 
 void call() #Call :
@@ -341,8 +362,8 @@ void add_expression() :
 {} 
 {
                               mul_expression() (
-                                  "+"  mul_expression() #Add(2)
-                                | "-"  mul_expression() #Subtract(2)
+                                  (                                    "+"|<PLUSENG>)  mul_expression() #Add(2)
+                                | ("-"|<MINUSENG>)  mul_expression() #Subtract(2)
                               )*
 }
 
@@ -350,8 +371,8 @@ void mul_expression() :
 {} 
 { 
 			      			  unary_expression() ( 
-                                  "*" unary_expression() #Times(2)
-                                | "/" unary_expression() #Divide(2)
+                                  (                                    "*"|<MULENG>) unary_expression() #Times(2)
+                                | ("/"|<DIVENG>) unary_expression() #Divide(2)
                               )*
 }
 
@@ -359,8 +380,8 @@ void unary_expression() :
 {}
 {
                               <NOT> unary_expression() #UnaryNot(1)
-                            | "+"   unary_expression() #UnaryPlus(1)
-                            | "-"   unary_expression() #UnaryMinus(1)
+                            | ("+"|<PLUSENG>)   unary_expression() #UnaryPlus(1)
+                            | ("-"|<MINUSENG>)   unary_expression() #UnaryMinus(1)
                             | primary_expression()
 }
 
@@ -385,7 +406,13 @@ void literal() :
 							  integer()
                             | character()							  	
 							| rational()
-							| bool()
+							| bool()						
+}
+void types() :
+{}
+{
+							  intType()
+							| stringType()
 }
 
 void identifier() #Identifier :
@@ -430,3 +457,14 @@ void quit() :
 {
   					<QUIT> #Quit
 }
+void intType() #IntegerType :
+{Token t;}
+{
+  	t = <Integer> { jjtThis.tokenValue = t.image;}
+}
+void stringType() #StringType :
+{Token t; }
+{
+	t = <String> { jjtThis.tokenValue = t.image;}
+}
+  

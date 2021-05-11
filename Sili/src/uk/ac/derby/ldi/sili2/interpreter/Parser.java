@@ -2,11 +2,18 @@ package uk.ac.derby.ldi.sili2.interpreter;
 
 import uk.ac.derby.ldi.sili2.parser.ast.*;
 import uk.ac.derby.ldi.sili2.values.*;
+import java.util.HashMap;
+
+class VariableData{
+	public Value value;
+	public String type;
+}
 
 public class Parser implements SiliVisitor {
 	
 	// Scope display handler
 	private Display scope = new Display();
+	private HashMap<String,VariableData> variables = new HashMap<String, VariableData>();
 	
 	// Get the ith child of a given node.
 	private static SimpleNode getChild(SimpleNode node, int childIndex) {
@@ -209,7 +216,7 @@ public class Parser implements SiliVisitor {
 	}
 	
 	// Dereference a variable or parameter, and return its value.
-	public Object visit(ASTDereference node, Object data) {
+	/*public Object visit(ASTDereference node, Object data) {
 		Display.Reference reference;
 		if (node.optimised == null) {
 			String name = node.tokenValue;
@@ -220,20 +227,96 @@ public class Parser implements SiliVisitor {
 		} else
 			reference = (Display.Reference)node.optimised;
 		return reference.getValue();
+	}*/
+	public Object visit(ASTDereference node, Object data) {
+		VariableData variable = variables.get(node.tokenValue);
+		if(variable == null)
+		{
+			throw new ExceptionSemantic("Variable or parameter " + node.tokenValue + " is undefined.");
+		}
+		return variable.value;
 	}
 	
 	// Execute an assignment statement.
 	public Object visit(ASTAssignment node, Object data) {
-		Display.Reference reference;
-		if (node.optimised == null) {
-			String name = getTokenOfChild(node, 0);
-			reference = scope.findReference(name);
-			if (reference == null)
-				reference = scope.defineVariable(name);
-			node.optimised = reference;
-		} else
-			reference = (Display.Reference)node.optimised;
-		reference.setValue(doChild(node, 1));
+		VariableData variable = variables.get(getTokenOfChild(node,0));
+		if(variable == null)
+		{			
+			Display.Reference reference;
+			if (node.optimised == null) {
+				String name = getTokenOfChild(node, 0);
+				reference = scope.findReference(name);
+				if (reference == null)
+					reference = scope.defineVariable(name);
+				node.optimised = reference;
+			} else
+				reference = (Display.Reference)node.optimised;
+			reference.setValue(doChild(node, 1));
+		}
+		else
+		{
+			String name = getTokenOfChild(node,0);
+			Value newVal = doChild(node,1);
+			switch(variable.type)
+			{
+			case "String":
+				try {
+					variable.value = new ValueString(newVal.stringValue());
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - String"); 
+				}
+				break;
+			case "Integer":
+				try {
+					variable.value = new ValueInteger(Integer.parseInt(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+				}
+			}
+			variables.remove(name);
+			variables.put(name,variable);
+		}
+		return data;
+	}
+	
+	public Object visit(ASTTypedAssignment node, Object data) {
+		if (node.optimised == null)
+		{
+			String name = getTokenOfChild(node,1);
+			
+			VariableData newVar = variables.get(name);
+			if(newVar == null)
+			{
+				newVar = new VariableData();
+				newVar.type = getTokenOfChild(node,0);
+			}			
+			switch(newVar.type)
+			{
+				case "String":
+					try {
+						newVar.value = new ValueString(getTokenOfChild(node,2));
+					}
+					catch(Exception e)
+					{
+						throw new ExceptionSemantic("Assigned value does not match declared type - String"); 
+					}
+					break;
+				case "Integer":
+					try {
+						newVar.value = new ValueInteger(Integer.parseInt(getTokenOfChild(node,2)));
+					}
+					catch(Exception e)
+					{
+						throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+					}
+					
+			}
+			variables.put(name, newVar);			
+		}
 		return data;
 	}
 
@@ -351,6 +434,14 @@ public class Parser implements SiliVisitor {
 	{
 		System.exit(0);
 		return node;
+	}
+	
+	public Object visit(ASTIntegerType node, Object data) {
+		return data;
+	}
+	
+	public Object visit(ASTStringType node, Object data) {
+		return data;
 	}
 
 }
