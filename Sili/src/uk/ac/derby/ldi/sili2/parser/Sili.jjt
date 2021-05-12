@@ -80,6 +80,7 @@ TOKEN : /* RESERVED WORDS AND LITERALS WITH CASE */
 | < MULENG:"MULTIPLY">
 | < DIVENG:"DIVIDE">
 | < QUIT: "QUIT">
+|  < ARRAY: "Array">
 }
 
 TOKEN : /* RESERVED TYPES */
@@ -284,7 +285,8 @@ void assignment() :
 void typedAssignment() :
 {}
 {
-					types() identifier() "=" expression() ";" #TypedAssignment(3)
+					types() (identifier() "=" expression() ";" #TypedAssignment(3)
+			| 		    	<ARRAY> identifier() "=" arrayArgList() ";" #ArrayAssignment(3)	)
 }
 
 void ifstatement() #IfStatement :
@@ -321,6 +323,12 @@ void arglist() #ArgList :
 {}
 {
 					"(" [ expression() ] ( "," expression() )* ")"
+}
+
+void arrayArgList() #ArrayArgList :
+{}
+{
+  					"{" [ expression()] ("," expression())* "}"
 }
 
 //
@@ -389,15 +397,16 @@ void primary_expression() :
 {}
 {
                               literal()
-                            | LOOKAHEAD(2) fn_invoke()
+                            | LOOKAHEAD(2) invoke()
                             | dereference()
                             | "(" expression() ")"
 }
 
-void fn_invoke() #FnInvoke :
+void invoke() :
 {}
 {
-							identifier() arglist()
+							identifier() (arglist() #FnInvoke(2)
+							| "[" integer() "]" #ArrayDereference(2))
 }
 
 void literal() :

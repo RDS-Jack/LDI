@@ -1,2 +1,4 @@
+Integer Array numberSet = {1,4,6,9};
 
-write("Hello" + " World");
+write(numberSet[0]);
+write(numberSet[1]);

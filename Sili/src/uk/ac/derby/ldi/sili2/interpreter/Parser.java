@@ -2,11 +2,20 @@ package uk.ac.derby.ldi.sili2.interpreter;
 
 import uk.ac.derby.ldi.sili2.parser.ast.*;
 import uk.ac.derby.ldi.sili2.values.*;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
 
 class VariableData{
 	public Value value;
 	public String type;
+}
+
+class ArrayData{
+	public List<Object> Values = new ArrayList<Object>();
+	public String Type;
 }
 
 public class Parser implements SiliVisitor {
@@ -14,6 +23,9 @@ public class Parser implements SiliVisitor {
 	// Scope display handler
 	private Display scope = new Display();
 	private HashMap<String,VariableData> variables = new HashMap<String, VariableData>();
+	private HashMap<String,ArrayData> arrays = new HashMap<String, ArrayData>();
+
+	private List<Object> tempStore = new ArrayList<Object>();
 	
 	// Get the ith child of a given node.
 	private static SimpleNode getChild(SimpleNode node, int childIndex) {
@@ -92,6 +104,77 @@ public class Parser implements SiliVisitor {
 		FunctionDefinition currentDefinition = (FunctionDefinition)data;
 		for (int i=0; i<node.jjtGetNumChildren(); i++)
 			currentDefinition.defineParameter(getTokenOfChild(node, i));
+		return data;
+	}
+	
+	public Object visit(ASTArrayAssignment node, Object data)
+	{
+		String name = getTokenOfChild(node,1);
+		String type = getTokenOfChild(node,0);
+		
+		ArrayData newArr = arrays.get(name);
+		if(newArr == null)
+		{
+			newArr = new ArrayData();
+			newArr.Type = type;
+		}
+		
+		//Do last node to populate tempStore
+		doChild(node,2);
+		
+		switch(newArr.Type)
+		{
+			case "Integer":
+				try 
+				{
+					for(int i=0; i<tempStore.size();i++)
+					{
+						newArr.Values.add(new ValueInteger(Integer.parseInt(tempStore.get(i).toString())));
+					}
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+				}
+				break;
+				
+			case "String": 
+				try 
+				{
+					for(int i=0; i<tempStore.size();i++)
+					{
+						newArr.Values.add(new ValueString(tempStore.get(i).toString()));
+					}
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+				}
+				break;
+		}
+		
+		arrays.remove(name);
+		arrays.put(name, newArr);
+		
+		//Cleanup tempStore
+		tempStore.removeAll(tempStore);
+		
+		//Code for testing stored contents of arrays
+		/*ArrayData test = arrays.get(name);
+		
+		for(int i = 0; i<test.Values.size(); i++)
+		{
+			System.out.print(test.Values.get(i));			
+		}*/
+		
+		return data;
+	}
+	
+	public Object visit(ASTArrayArgList node, Object data) {
+		for(int i=0; i<node.jjtGetNumChildren(); i++)
+		{
+			tempStore.add(doChild(node,i));
+		}
 		return data;
 	}
 	
@@ -235,6 +318,22 @@ public class Parser implements SiliVisitor {
 			throw new ExceptionSemantic("Variable or parameter " + node.tokenValue + " is undefined.");
 		}
 		return variable.value;
+	}
+	
+	public Object visit(ASTArrayDereference node, Object data)
+	{
+		String name = getTokenOfChild(node,0);
+		Integer index = Integer.parseInt(doChild(node,1).toString());
+		
+		ArrayData array = arrays.get(name);
+		if(array == null)
+		{
+			throw new ExceptionSemantic("Referenced array does not exist.");
+		}
+		
+		var arrData = array.Values.get(index);
+		
+		return arrData;
 	}
 	
 	// Execute an assignment statement.
