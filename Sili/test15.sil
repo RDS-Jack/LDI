@@ -1,4 +1,14 @@
-Integer Array numberSet = {1,4,6,9};
+Class TestClass {
+	Double x;
+	String y;
+}
 
-write(numberSet[0]);
-write(numberSet[1]);
+Create anObject From TestClass;
+
+anObject.x = 1.5;
+
+write(anObject.x + 1);
+
+anObject.y = "Hello World";
+
+write(anObject.y);

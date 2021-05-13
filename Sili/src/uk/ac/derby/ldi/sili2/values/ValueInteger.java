@@ -47,6 +47,10 @@ public class ValueInteger extends ValueAbstract {
 	public Value mult(Value v) {
 		return new ValueInteger(internalValue * v.longValue());
 	}
+	
+	public Value modulus(Value v)	{
+		return new ValueInteger(internalValue % v.longValue());
+	}
 
 	public Value div(Value v) {
 		return new ValueInteger(internalValue / v.longValue());

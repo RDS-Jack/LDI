@@ -1,0 +1,10 @@
+Integer X = 1;
+Integer Y = 2;
+Integer Z = 3;
+
+Function TestFunction(X,Y,Z)
+{
+	return X*Y*Z;
+}
+
+Output(TestFunction(X,Y,Z));

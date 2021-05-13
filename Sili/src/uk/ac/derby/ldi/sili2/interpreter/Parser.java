@@ -1,12 +1,12 @@
 package uk.ac.derby.ldi.sili2.interpreter;
 
-import uk.ac.derby.ldi.sili2.parser.ast.*;
-import uk.ac.derby.ldi.sili2.values.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
+import uk.ac.derby.ldi.sili2.parser.ast.*;
+import uk.ac.derby.ldi.sili2.values.*;
 
 class VariableData{
 	public Value value;
@@ -18,12 +18,25 @@ class ArrayData{
 	public String Type;
 }
 
+class UserClass
+{
+	public HashMap<String,VariableData> variables = new HashMap<String, VariableData>();
+}
+
+class UserObject
+{
+	public String Name;
+	public UserClass Class;
+}
+
 public class Parser implements SiliVisitor {
 	
 	// Scope display handler
 	private Display scope = new Display();
 	private HashMap<String,VariableData> variables = new HashMap<String, VariableData>();
 	private HashMap<String,ArrayData> arrays = new HashMap<String, ArrayData>();
+	private HashMap<String,UserClass> classes = new HashMap<String, UserClass>();
+	private HashMap<String,UserObject> objects = new HashMap<String, UserObject>();
 
 	private List<Object> tempStore = new ArrayList<Object>();
 	
@@ -148,7 +161,34 @@ public class Parser implements SiliVisitor {
 				}
 				catch(Exception e)
 				{
-					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+					throw new ExceptionSemantic("Assigned value does not match declared type - String");
+				}
+				break;
+				
+			case "Boolean":
+				try 
+				{
+					for(int i=0; i<tempStore.size();i++)
+					{
+						newArr.Values.add(new ValueBoolean(Boolean.parseBoolean(tempStore.get(i).toString())));
+					}
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Boolean");
+				}
+				break;
+			case "Double":
+				try 
+				{
+					for(int i=0; i<tempStore.size();i++)
+					{
+						newArr.Values.add(new ValueDouble(Double.parseDouble(tempStore.get(i).toString())));
+					}
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Double");
 				}
 				break;
 		}
@@ -173,7 +213,7 @@ public class Parser implements SiliVisitor {
 	public Object visit(ASTArrayArgList node, Object data) {
 		for(int i=0; i<node.jjtGetNumChildren(); i++)
 		{
-			tempStore.add(doChild(node,i));
+			tempStore.add(doChild(node,i).toString());
 		}
 		return data;
 	}
@@ -315,7 +355,16 @@ public class Parser implements SiliVisitor {
 		VariableData variable = variables.get(node.tokenValue);
 		if(variable == null)
 		{
-			throw new ExceptionSemantic("Variable or parameter " + node.tokenValue + " is undefined.");
+			Display.Reference reference;
+			if (node.optimised == null) {
+				String name = node.tokenValue;
+				reference = scope.findReference(name);
+				if (reference == null)
+					throw new ExceptionSemantic("Variable or parameter " + name + " is undefined.");
+				node.optimised = reference;
+			} else
+				reference = (Display.Reference)node.optimised;
+			return reference.getValue();
 		}
 		return variable.value;
 	}
@@ -375,6 +424,25 @@ public class Parser implements SiliVisitor {
 				{
 					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
 				}
+				break;
+			case "Boolean":
+				try {
+					variable.value = new ValueBoolean(Boolean.parseBoolean(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Boolean");
+				}
+				break;
+			case "Double":
+				try {
+					variable.value = new ValueDouble(Double.parseDouble(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Double");
+				}
+				break;
 			}
 			variables.remove(name);
 			variables.put(name,variable);
@@ -412,6 +480,25 @@ public class Parser implements SiliVisitor {
 					{
 						throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
 					}
+					break;
+				case "Boolean":
+					try {
+						newVar.value = new ValueBoolean(Boolean.parseBoolean(getTokenOfChild(node,2)));
+					}
+					catch(Exception e)
+					{
+						throw new ExceptionSemantic("Assigned value does not match declared type - Boolean");
+					}
+					break;
+				case "Double":
+					try {
+						newVar.value = new ValueDouble(Double.parseDouble(getTokenOfChild(node,2)));
+					}
+					catch(Exception e)
+					{
+						throw new ExceptionSemantic("Assigned value does not match declared type - Double");
+					}
+					break;
 					
 			}
 			variables.put(name, newVar);			
@@ -472,6 +559,11 @@ public class Parser implements SiliVisitor {
 	// *
 	public Object visit(ASTTimes node, Object data) {
 		return doChild(node, 0).mult(doChild(node, 1));
+	}
+	
+	public Object visit(ASTModulus node, Object data)
+	{
+		return doChild(node,0).modulus(doChild(node,1));
 	}
 
 	// /
@@ -540,6 +632,200 @@ public class Parser implements SiliVisitor {
 	}
 	
 	public Object visit(ASTStringType node, Object data) {
+		return data;
+	}
+	
+	public Object visit(ASTBoolType node, Object data) {
+		return data;
+	}
+	
+	public Object visit(ASTDoubleType node, Object data) {
+		return data;
+	}
+	
+	public Object visit(ASTClassAssignment node, Object data)
+	{
+		String name = getTokenOfChild(node,0);
+		
+		UserClass current = classes.get(name);
+		if(current != null)
+		{
+			throw new ExceptionSemantic("Class is already defined");
+		}
+		current = new UserClass();
+		for(int i = 1; i<node.jjtGetNumChildren(); i++)
+		{
+			doChild(node,i);
+			VariableData newVar = new VariableData();
+			newVar.type = tempStore.get(0).toString();
+			current.variables.put(tempStore.get(1).toString(), newVar);
+			tempStore = new ArrayList<Object>();			
+		}
+		
+		classes.put(name, current);
+		
+		return data;
+	}
+	
+	public Object visit(ASTClassVarAssignment node, Object data)
+	{
+		String type = getTokenOfChild(node,0);
+		String name = getTokenOfChild(node,1);
+		tempStore.add(type);
+		tempStore.add(name);
+		return data;
+	}
+	
+	public Object visit(ASTSetObjectVar node, Object data)
+	{
+		String objectName = getTokenOfChild(node,0);
+		String variableName = getTokenOfChild(node,1);
+		
+		UserObject current = objects.get(objectName);
+		VariableData currentData = current.Class.variables.get(variableName);
+		
+		Value newVal = doChild(node,2);
+		switch(currentData.type)
+		{
+			case "String":
+				try {
+					currentData.value = new ValueString(newVal.stringValue());
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - String"); 
+				}
+				break;
+			case "Integer":
+				try {
+					currentData.value = new ValueInteger(Integer.parseInt(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+				}
+				break;
+			case "Boolean":
+				try {
+					currentData.value = new ValueBoolean(Boolean.parseBoolean(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Boolean");
+				}	
+				break;
+			case "Double":
+				try {
+					currentData.value = new ValueDouble(Double.parseDouble(newVal.stringValue()));
+				}
+				catch(Exception e)
+				{
+					throw new ExceptionSemantic("Assigned value does not match declared type - Double");
+				}	
+				break;
+			
+		}
+		
+		current.Class.variables.put(variableName, currentData);
+		
+		return data;
+	}
+	
+	public Object visit(ASTInstantiateObject node, Object data)
+	{
+		String objectName = getTokenOfChild(node,0);
+		String className = getTokenOfChild(node,1);
+		
+		UserClass refClass = classes.get(className);
+		UserObject newObj = new UserObject();
+		newObj.Name = objectName;
+		newObj.Class = refClass;
+		
+		objects.put(newObj.Name, newObj);
+		
+		return data;
+	}
+	
+	public Object visit(ASTClassDereference node, Object data)
+	{
+		String objectName = getTokenOfChild(node,0);
+		String varName = getTokenOfChild(node,1);
+		
+		UserObject currentObj = objects.get(objectName);
+		if(currentObj == null)
+		{
+			throw new ExceptionSemantic("The referenced object does not exist");
+		}
+		
+		VariableData currentVar = currentObj.Class.variables.get(varName);
+		
+		return currentVar.value;
+	}
+	
+	public Object visit(ASTRandomNumber node, Object data)
+	{
+		int lowerBound = Integer.parseInt(doChild(node,0).toString());
+		int upperBound = Integer.parseInt(doChild(node,1).toString());
+		
+		Random r = new Random();
+		ValueInteger val = new ValueInteger(r.nextInt((upperBound - lowerBound) + 1) + lowerBound);
+		
+		return val;
+	}	
+	
+	public Object visit(ASTSetArrayIndex node, Object data)
+	{
+		String arrayName = getTokenOfChild(node,0);
+		ArrayData array = arrays.get(arrayName);
+		if(array == null)
+		{
+			throw new ExceptionSemantic("The referenced array does not exist");
+		}
+		Integer index = Integer.parseInt(doChild(node,1).toString());
+		Value newVal = doChild(node,2);
+		
+		switch(array.Type)
+		{
+		case "String":
+			try {
+				array.Values.set(index, new ValueString(newVal.stringValue()));
+			}
+			catch(Exception e)
+			{
+				throw new ExceptionSemantic("Assigned value does not match declared type - String"); 
+			}
+			break;
+		case "Integer":
+			try {
+				array.Values.set(index, new ValueInteger(Integer.parseInt(newVal.stringValue())));
+			}
+			catch(Exception e)
+			{
+				throw new ExceptionSemantic("Assigned value does not match declared type - Integer");
+			}
+			break;
+		case "Boolean":
+			try {
+				array.Values.set(index, new ValueBoolean(Boolean.parseBoolean(newVal.stringValue())));
+			}
+			catch(Exception e)
+			{
+				throw new ExceptionSemantic("Assigned value does not match declared type - Boolean");
+			}	
+			break;
+		case "Double":
+			try {
+				array.Values.set(index, new ValueDouble(Double.parseDouble(newVal.stringValue())));
+			}
+			catch(Exception e)
+			{
+				throw new ExceptionSemantic("Assigned value does not match declared type - Double");
+			}	
+			break;
+		}
+		
+		arrays.put(arrayName, array);
+		
 		return data;
 	}
 

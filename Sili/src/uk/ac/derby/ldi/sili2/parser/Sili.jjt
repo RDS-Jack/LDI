@@ -59,15 +59,8 @@ SPECIAL_TOKEN : /* COMMENTS */
 
 TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 {
-  < IF: "IF" >
-| < ELSE: "ELSE" >
-| < FOR: "FOR" >
-| <WHILE: "WHILE" >
-| < WRITE: "WRITE" >
-| < FN: "FN" >
-| < RETURN: "RETURN" >
-| < OR: "OR" >
-| < AND: "AND" >
+
+ < RETURN: "RETURN" >
 | < NOT: "NOT" >
 | < TRUE: "TRUE" >
 | < FALSE: "FALSE" >
@@ -75,18 +68,40 @@ TOKEN [IGNORE_CASE] : /* RESERVED WORDS AND LITERALS */
 
 TOKEN : /* RESERVED WORDS AND LITERALS WITH CASE */
 {
-   < PLUSENG:"PLUS"|"+">
+   < PLUSENG:"PLUS">
 | < MINUSENG:"MINUS">
 | < MULENG:"MULTIPLY">
 | < DIVENG:"DIVIDE">
+| < MODULUS:"MODULUS">
+| < ASSIGNENG:"ASSIGN TO">
+| < AND:"AND"|"&">
+| < OR: "OR"|"|" >
+| < GTENG: "GREATER THAN"|">" >
+| < LTENG: "LESS THAN"|"<" >
+| < EQENG: "EQUALS"|"==" >
+| < GEQENG: "GREATER THAN OR EQUAL"|">=" >
+| < LEQENG: "LESS THAN OR EQUAL"|"<=" >
+| < NEENG: "NOT EQUAL"|"!=" >
 | < QUIT: "QUIT">
-|  < ARRAY: "Array">
+| < ARRAY: "Array">
+| < CLASS:"Class">
+| <CREATE:"Create">
+| <FROM:"From">
+| <RANDOM:"RandomNumber">
+| < FOR: "FOR" >
+| <WHILE: "WHILE" >
+| < IF: "IF" >
+| < ELSE: "ELSE" >
+| < FN: "Function" >
+| <WRITE:"Output">
 }
 
 TOKEN : /* RESERVED TYPES */
 {
 	<Integer:"Integer">
 | 	<String:"String" >
+|   <Boolean:"Boolean">
+|   <Double:"Double">
 }
 
 TOKEN : /* LITERALS */
@@ -142,7 +157,7 @@ TOKEN : /* LITERALS */
 
 TOKEN : /* IDENTIFIERS */
 {
-  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|"#")* >
+  < IDENTIFIER: <UPPERCASE_LETTER> (<LETTER>|<DIGIT>|"#")* >
 | < #LETTER:
       [
        "\u0024",
@@ -180,6 +195,12 @@ TOKEN : /* IDENTIFIERS */
        "\u1040"-"\u1049"
       ]
   >
+|
+	< #UPPERCASE_LETTER:
+		
+						  ["A" - "Z"]
+		
+	>
 }
 
 TOKEN : /* SEPARATORS */
@@ -203,12 +224,6 @@ TOKEN : /* OPERATOR SYMBOLS */
 | < PEQ: "+=" >
 | < MEQ: "-=" >
 | < UEQ: "@=" >
-| < EQ: "==" >
-| < GT: ">" >
-| < LT: "<" >
-| < LE: "<=" >
-| < GE: ">=" >
-| < NE: "!=" >
 | < HOOK: "?" >
 | < COLON: ":" >
 | < PLUS: "+" >
@@ -241,6 +256,8 @@ void statement() #Statement :
 				|	call()
 				|   quit()
 				|   typedAssignment()
+				|   classAssignment()
+				|   instantiateObject()
 }
 
 void block() #Block :
@@ -266,7 +283,7 @@ void fndef() #FnDef :
 {
 					<FN> identifier() parmlist() "{" 
 						fnbody()
-						[ <RETURN> returnexpr() {jjtThis.fnHasReturn = true;} ] 
+						[ <RETURN> returnexpr() ";" {jjtThis.fnHasReturn = true;} ] 
 					"}"
 }
 
@@ -279,14 +296,23 @@ void returnexpr() #ReturnExpression :
 void assignment() :
 {}
 {
-					identifier() "=" expression() ";" #Assignment(2)
+					identifier() (("="|<ASSIGNENG>) expression() ";" #Assignment(2)
+								| "." identifier() ("="|<ASSIGNENG>) expression() ";" #SetObjectVar(3)
+								| "[" integer() "]" ("="|<ASSIGNENG>) expression() ";" #SetArrayIndex(3))
 }
 
 void typedAssignment() :
 {}
 {
-					types() (identifier() "=" expression() ";" #TypedAssignment(3)
-			| 		    	<ARRAY> identifier() "=" arrayArgList() ";" #ArrayAssignment(3)	)
+					types() (identifier() (("="|<ASSIGNENG>) expression() ";" #TypedAssignment(3)
+											| ";" #ClassVarAssignment(2))
+			| 		    	<ARRAY> identifier() ("="|<ASSIGNENG>) arrayArgList() ";" #ArrayAssignment(3))
+}
+
+void classAssignment() #ClassAssignment :
+{}
+{
+					<CLASS> identifier() "{" typedAssignment() (typedAssignment())* "}"
 }
 
 void ifstatement() #IfStatement :
@@ -299,7 +325,7 @@ void ifstatement() #IfStatement :
 void forloop() #ForLoop :
 {}
 {
-  					<FOR> "(" assignment() ";" expression() ";" assignment() ")" statement()
+  					<FOR> "(" assignment() expression() ";" assignment() ")" statement()
 }
 
 void whileloop() #WhileLoop :
@@ -331,6 +357,12 @@ void arrayArgList() #ArrayArgList :
   					"{" [ expression()] ("," expression())* "}"
 }
 
+void instantiateObject() #InstantiateObject :
+{}
+{
+			<CREATE> identifier() <FROM> identifier() ";"
+}
+
 //
 // Expressions
 //
@@ -357,12 +389,12 @@ void compare_expression() :
 {} 
 { 
                               add_expression() [
-                                 "=="  add_expression() #CompEqual(2)
-                               | "<>" add_expression() #CompNequal(2)
-                               | ">=" add_expression() #CompGTE(2)
-                               | "<=" add_expression() #CompLTE(2)
-                               | ">"  add_expression() #CompGT(2)
-                               | "<"  add_expression() #CompLT(2)
+                                 <EQENG>  add_expression() #CompEqual(2)
+                               | <NEENG> add_expression() #CompNequal(2)
+                               | <GEQENG> add_expression() #CompGTE(2)
+                               | <LEQENG>  add_expression() #CompLTE(2)
+                               | <GTENG>  add_expression() #CompGT(2)
+                               | <LTENG>  add_expression() #CompLT(2)
                                ]
 }
 
@@ -381,6 +413,7 @@ void mul_expression() :
 			      			  unary_expression() ( 
                                   (                                    "*"|<MULENG>) unary_expression() #Times(2)
                                 | ("/"|<DIVENG>) unary_expression() #Divide(2)
+                                | ("%"|<MODULUS>) unary_expression() #Modulus(2)
                               )*
 }
 
@@ -400,13 +433,21 @@ void primary_expression() :
                             | LOOKAHEAD(2) invoke()
                             | dereference()
                             | "(" expression() ")"
+                            | random()
 }
 
 void invoke() :
 {}
 {
 							identifier() (arglist() #FnInvoke(2)
-							| "[" integer() "]" #ArrayDereference(2))
+							| "[" integer() "]" #ArrayDereference(2)
+							|  "." identifier() #ClassDereference(2))
+}
+
+void random() #RandomNumber:
+{}
+{
+  							<RANDOM>"(" expression() "," expression() ")"
 }
 
 void literal() :
@@ -422,6 +463,8 @@ void types() :
 {
 							  intType()
 							| stringType()
+							| boolType()
+							| doubleType()
 }
 
 void identifier() #Identifier :
@@ -476,4 +519,13 @@ void stringType() #StringType :
 {
 	t = <String> { jjtThis.tokenValue = t.image;}
 }
-  
+void boolType() #BoolType :
+{Token t; }
+{
+	t = <Boolean> { jjtThis.tokenValue = t.image;}
+}
+void doubleType() #DoubleType :
+{Token t; }
+{
+	t = <Double> { jjtThis.tokenValue = t.image;}
+}

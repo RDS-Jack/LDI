@@ -31,6 +31,10 @@ public abstract class ValueAbstract implements Value {
 	public Value mult(Value v) {
 		throw new ExceptionSemantic("Cannot perform * on " + getName() + " and " + v.getName());
 	}
+	
+	public Value modulus(Value v) {
+		throw new ExceptionSemantic("Cannot perform % on " + getName() + " and " + v.getName());
+	}
 
 	public Value div(Value v) {
 		throw new ExceptionSemantic("Cannot perform / on " + getName() + " and " + v.getName());

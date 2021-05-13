@@ -33,6 +33,8 @@ public interface Value {
 	/** Divide another value by this. */
 	public Value div(Value v);
 	
+	public Value modulus(Value v);
+	
 	/** Return unary plus of this value. */
 	public Value unary_plus();
 	
